@@ -65,6 +65,9 @@ export class ZoomableImage implements OnInit, OnDestroy {
   // We need to pinch only after the pinchStart event is delivered.
   private pinching: boolean = false;
 
+  // pan
+  private firstPanEvent: boolean = false;
+
   constructor() {
   }
 
@@ -82,7 +85,7 @@ export class ZoomableImage implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy() {
-    this.scrollableElement.removeEventListener('scroll', this.scrollListener);
+    // this.scrollableElement.removeEventListener('scroll', this.scrollListener);
     this.resizeSubscription.unsubscribe();
   }
 
@@ -91,8 +94,8 @@ export class ZoomableImage implements OnInit, OnDestroy {
    */
   private attachEvents() {
     // Scroll event
-    this.scrollListener = this.scrollEvent.bind(this);
-    this.scrollableElement.addEventListener('scroll', this.scrollListener);
+    // this.scrollListener = this.scrollEvent.bind(this);
+    // this.scrollableElement.addEventListener('scroll', this.scrollListener);
   }
 
   /**
@@ -155,7 +158,7 @@ export class ZoomableImage implements OnInit, OnDestroy {
       scale: this.scale,
     });
 
-    event.preventDefault();
+    // event.preventDefault();
   }
 
   /**
@@ -225,16 +228,21 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private panEvent(event) {
-    // calculate center x,y since pan started
-    const x = Math.max(Math.floor(this.panCenterStart.x + event.deltaX), 0);
-    const y = Math.max(Math.floor(this.panCenterStart.y + event.deltaY), 0);
+    if (this.firstPanEvent === true) {
+      this.firstPanEvent = false;
+      this.setCenter(event);
+    }
 
+    // // calculate center x,y since pan started
+    const x = Math.floor(this.panCenterStart.x + event.deltaX);
+    const y = Math.floor(this.panCenterStart.y + event.deltaY);
+    //
     this.centerStart.x = x;
     this.centerStart.y = y;
 
     if (event.isFinal) {
-      this.panCenterStart.x = x;
-      this.panCenterStart.y = y;
+      // reset first flag
+      this.firstPanEvent = true;
     }
 
     this.displayScale();
@@ -246,8 +254,9 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Event} event
    */
   private scrollEvent(event) {
-    this.scroll.x = event.target.scrollLeft;
-    this.scroll.y = event.target.scrollTop;
+    console.log('scroll event', event);
+    // this.scroll.x = event.target.scrollLeft;
+    // this.scroll.y = event.target.scrollTop;
   }
 
   /**
@@ -256,16 +265,21 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private setCenter(event) {
+    console.log('setCenter', event);
     const realImageWidth = this.imageWidth * this.scale;
     const realImageHeight = this.imageHeight * this.scale;
 
     this.centerStart.x = Math.max(event.center.x - this.position.x * this.scale, 0);
     this.centerStart.y = Math.max(event.center.y - this.position.y * this.scale, 0);
-    this.panCenterStart.x = Math.max(event.center.x - this.position.x * this.scale, 0);
-    this.panCenterStart.y = Math.max(event.center.y - this.position.y * this.scale, 0);
+    this.panCenterStart.x = this.centerStart.x;
+    this.panCenterStart.y = this.centerStart.y;
 
     this.centerRatio.x = Math.min((this.centerStart.x + this.scroll.x) / realImageWidth, 1);
     this.centerRatio.y = Math.min((this.centerStart.y + this.scroll.y) / realImageHeight, 1);
+
+    if (this.centerRatio.x < 0 || this.centerRatio.y < 0) {
+      console.error('center ratio:',this.centerRatio);
+    }
   }
 
   /**
@@ -283,12 +297,20 @@ export class ZoomableImage implements OnInit, OnDestroy {
     this.containerStyle.width = `${realImageWidth}px`;
     this.containerStyle.height = `${realImageHeight}px`;
 
-    this.scroll.x = this.centerRatio.x * realImageWidth - this.centerStart.x;
-    this.scroll.y = this.centerRatio.y * realImageWidth - this.centerStart.y;
+    const maxScroll = this.getMaxScroll();
+    this.scroll.x = Math.min(Math.max(0, this.centerRatio.x * realImageWidth - this.centerStart.x), maxScroll.x);
+    this.scroll.y = Math.min(Math.max(0, this.centerRatio.y * realImageHeight - this.centerStart.y), maxScroll.y);
 
     // Set scroll of the ion scroll
     this.scrollableElement.scrollLeft = this.scroll.x;
     this.scrollableElement.scrollTop = this.scroll.y;
+  }
+
+  private getMaxScroll() {
+    const realImageWidth = this.imageWidth * this.scale;
+    const realImageHeight = this.imageHeight * this.scale;
+    const maxScroll = {x: realImageWidth - this.imageWidth, y: realImageHeight - this.imageHeight}
+    return maxScroll;
   }
 
   /**
