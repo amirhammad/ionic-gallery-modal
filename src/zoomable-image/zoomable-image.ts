@@ -254,9 +254,8 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Event} event
    */
   private scrollEvent(event) {
-    console.log('scroll event', event);
-    // this.scroll.x = event.target.scrollLeft;
-    // this.scroll.y = event.target.scrollTop;
+    this.scroll.x = event.target.scrollLeft;
+    this.scroll.y = event.target.scrollTop;
   }
 
   /**
@@ -265,7 +264,6 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private setCenter(event) {
-    console.log('setCenter', event);
     const realImageWidth = this.imageWidth * this.scale;
     const realImageHeight = this.imageHeight * this.scale;
 
@@ -276,10 +274,6 @@ export class ZoomableImage implements OnInit, OnDestroy {
 
     this.centerRatio.x = Math.min((this.centerStart.x + this.scroll.x) / realImageWidth, 1);
     this.centerRatio.y = Math.min((this.centerStart.y + this.scroll.y) / realImageHeight, 1);
-
-    if (this.centerRatio.x < 0 || this.centerRatio.y < 0) {
-      console.error('center ratio:',this.centerRatio);
-    }
   }
 
   /**
