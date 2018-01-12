@@ -39,11 +39,13 @@ export class GalleryModal implements OnInit {
   private transitionDuration: string = '200ms';
   private transitionTimingFunction: string = 'cubic-bezier(0.33, 0.66, 0.66, 1)';
 
+  private minDeltaYToDismiss = 0;
+
   constructor(private viewCtrl: ViewController, params: NavParams, private element: ElementRef, private platform: Platform, private domSanitizer: DomSanitizer) {
     this.photos = params.get('photos') || [];
     this.closeIcon = params.get('closeIcon') || 'arrow-back';
     this.initialSlide = params.get('initialSlide') || 0;
-
+    this.minDeltaYToDismiss = params.get('minDeltaYToDismiss') || 0;
     this.initialImage = this.photos[this.initialSlide] || {};
   }
 
@@ -168,7 +170,7 @@ export class GalleryModal implements OnInit {
 
     this.panUpDownRatio += event.velocityY * 30;
 
-    if (this.panUpDownRatio >= 0.65 && this.panUpDownDeltaY > 0) {
+    if (this.panUpDownRatio >= 0.65 && this.panUpDownDeltaY > 0 && event.deltaY > this.minDeltaYToDismiss) {
       if (!this.dismissed) {
         this.dismiss();
       }
