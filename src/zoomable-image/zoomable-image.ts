@@ -62,6 +62,9 @@ export class ZoomableImage implements OnInit, OnDestroy {
   private imageStyle: any = {};
   private resizeSubscription: any;
 
+  // We need to pinch only after the pinchStart event is delivered.
+  private pinching: boolean = false;
+
   constructor() {
   }
 
@@ -133,6 +136,10 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private pinchEvent(event) {
+    if (this.pinching === false) {
+      return;
+    }
+
     let scale = this.scaleStart * event.scale;
 
     if (scale > this.maxScale) {
@@ -157,6 +164,8 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private pinchStartEvent(event) {
+    this.pinching = true;
+
     this.scaleStart = this.scale;
     this.setCenter(event);
   }
@@ -167,6 +176,8 @@ export class ZoomableImage implements OnInit, OnDestroy {
    * @param  {Hammer.Event} event
    */
   private pinchEndEvent(event) {
+    this.pinching = false;
+
     this.checkScroll();
 
     if (this.scale > this.maxScale) {
