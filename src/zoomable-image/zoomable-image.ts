@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, Output, ViewChild, EventEmitter, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, ViewChild, EventEmitter, ElementRef, Renderer2, NgZone } from '@angular/core';
 import { ViewController, Scroll } from 'ionic-angular';
 import { Subject } from 'rxjs/Subject';
 
@@ -9,6 +9,7 @@ import { Subject } from 'rxjs/Subject';
 })
 export class ZoomableImage implements OnInit, OnDestroy {
   @ViewChild('ionScrollContainer', { read: ElementRef }) ionScrollContainer: ElementRef;
+  @ViewChild('container') containerRef: ElementRef;
 
   @Input() photo: any;
   @Input() resizeTriggerer: Subject<any>;
@@ -68,7 +69,7 @@ export class ZoomableImage implements OnInit, OnDestroy {
   // pan
   private firstPanEvent: boolean = false;
 
-  constructor() {
+  constructor(private renderer: Renderer2, private zone: NgZone) {
   }
 
   public ngOnInit() {
@@ -128,7 +129,7 @@ export class ZoomableImage implements OnInit, OnDestroy {
     const width = this.originalSize.width;
     const height = this.originalSize.height;
 
-    this.maxScale = Math.max(width / this.imageWidth - this.maxScaleBounce, 1);
+    // this.maxScale = Math.max(width / this.imageWidth - this.maxScaleBounce, 1);
 
     this.displayScale();
   }
@@ -210,7 +211,7 @@ export class ZoomableImage implements OnInit, OnDestroy {
   private doubleTapEvent(event) {
     this.setCenter(event);
 
-    let scale = this.scale > 1 ? 1 : 2.5;
+    let scale = this.scale > 1 ? 1 : 2;
     if (scale > this.maxScale) {
       scale = this.maxScale;
     }
@@ -287,17 +288,25 @@ export class ZoomableImage implements OnInit, OnDestroy {
     this.position.x = Math.max((this.wrapperWidth - realImageWidth) / (2 * this.scale), 0);
     this.position.y = Math.max((this.wrapperHeight - realImageHeight) / (2 * this.scale), 0);
 
-    this.imageStyle.transform = `scale(${this.scale}) translate(${this.position.x}px, ${this.position.y}px)`;
-    this.containerStyle.width = `${realImageWidth}px`;
-    this.containerStyle.height = `${realImageHeight}px`;
+    this.zone.run(() => {
+      this.imageStyle.transform = `scale(${this.scale}) translate(${this.position.x}px, ${this.position.y}px)`;
+      // this.containerStyle.width = `${realImageWidth}px`;
+      // this.containerStyle.height = `${realImageHeight}px`;
+    });
+    this.renderer.setStyle(this.containerRef.nativeElement, "width", `${realImageWidth}px`);
+    this.renderer.setStyle(this.containerRef.nativeElement, "height", `${realImageHeight}px`);
 
     const maxScroll = this.getMaxScroll();
+
     this.scroll.x = Math.min(Math.max(0, this.centerRatio.x * realImageWidth - this.centerStart.x), maxScroll.x);
     this.scroll.y = Math.min(Math.max(0, this.centerRatio.y * realImageHeight - this.centerStart.y), maxScroll.y);
+    // console.log('display', this.centerStart, {realImageWidth, realImageHeight}, maxScroll, this.scroll);
 
-    // Set scroll of the ion scroll
-    this.scrollableElement.scrollLeft = this.scroll.x;
-    this.scrollableElement.scrollTop = this.scroll.y;
+    this.zone.run(() => {
+      // Set scroll of the ion scroll
+      this.scrollableElement.scrollLeft = this.scroll.x;
+      this.scrollableElement.scrollTop = this.scroll.y;
+    });
   }
 
   private getMaxScroll() {

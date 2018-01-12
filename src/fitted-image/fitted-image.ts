@@ -60,7 +60,7 @@ export class FittedImage implements OnInit, OnDestroy {
     // Save the original dimensions
 
     // set minimum height
-    const minHeight = 700;//px
+    const minHeight = 0;//px
     const ratio = event.target.width/event.target.height;
 
     this.originalDimensions.height = Math.max(minHeight, event.target.height);
